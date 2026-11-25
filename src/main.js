@@ -23,6 +23,8 @@ function writeStore(key, value) {
 
 const storedFavorites = readStore(FAVORITES_KEY, []);
 const storedRecents = readStore(RECENTS_KEY, []);
+const defaultTasks = ["Собрать список файлов", "Проверить заметки", "Подготовить рабочий стол"];
+const storedTasks = readStore(TASKS_KEY, defaultTasks);
 const state = {
   mode: "all",
   categoryId: null,
@@ -39,7 +41,7 @@ const state = {
   demoCounter: 0,
   scanRunning: false,
   pomodoro: { remaining: 25 * 60, running: false, interval: null },
-  taskRows: readStore(TASKS_KEY, ["Собрать список файлов", "Проверить заметки", "Подготовить рабочий стол"]).slice(0, 8),
+  taskRows: (Array.isArray(storedTasks) ? storedTasks : defaultTasks).slice(0, 8),
 };
 
 function escapeHtml(value = "") {

@@ -25,4 +25,9 @@ npm install
 npm run desktop:win
 ```
 
-Запускай сборку на Windows: она соберёт portable x64-приложение Electron в `release/ByAzen-1.0.0-portable.exe`. Оболочка находится в `electron/main.cjs`; Windows-иконка — `public/ByAzen.ico`.
+Собирай на Windows. В папке `release/` появятся два варианта для 64-разрядной Windows 10 или 11:
+
+- `ByAzen-<версия>-portable.exe` — один файл, установка не нужна. При запуске он распаковывает приложение во временную папку.
+- `ByAzen-<версия>-windows-x64.zip` — если portable EXE не открывается, распакуй весь архив в отдельную папку и запусти `ByAzen.exe` из неё. Остальные файлы должны остаться рядом с EXE.
+
+GitHub Actions проверяет запуск каждой сборки на Windows перед публикацией артефакта.

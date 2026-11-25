@@ -1,6 +1,6 @@
 {
   "name": "byazen-desktop-suite",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Dark desktop library with 185 ByAzen app prototypes.",
@@ -11,7 +11,7 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "desktop:dev": "npm run build && electron .",
-    "desktop:win": "npm run build && electron-builder --win portable --x64 --publish never",
+    "desktop:win": "npm run build && electron-builder --win portable zip --x64 --publish never",
     "desktop:dir": "npm run build && electron-builder --dir"
   },
   "dependencies": {
@@ -42,11 +42,14 @@
       }
     ],
     "win": {
+      "artifactName": "ByAzen-${version}-windows-${arch}.${ext}",
       "icon": "public/ByAzen.ico",
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },

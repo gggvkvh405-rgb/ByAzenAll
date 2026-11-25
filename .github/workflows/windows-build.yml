@@ -7,6 +7,7 @@ on:
       - 'electron/**'
       - 'public/**'
       - 'src/**'
+      - 'scripts/test-windows-startup.ps1'
       - 'index.html'
       - 'package.json'
       - 'package-lock.json'
@@ -31,9 +32,24 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run desktop:win
+      - name: Check launch from the unpacked ZIP
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem 'release/ByAzen-*-windows-x64.zip' | Select-Object -First 1
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath 'release/smoke-unpacked'
+          ./scripts/test-windows-startup.ps1 -Exe 'release/smoke-unpacked/ByAzen.exe'
       - uses: actions/upload-artifact@v7
         with:
-          name: ByAzen-Windows-x64-portable
+          path: release/ByAzen-*-windows-x64.zip
+          if-no-files-found: error
+          archive: false
+      - name: Check launch of the portable EXE
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem 'release/ByAzen-*-portable.exe' | Select-Object -First 1
+          ./scripts/test-windows-startup.ps1 -Exe $exe.FullName
+      - uses: actions/upload-artifact@v7
+        with:
           path: release/ByAzen-*-portable.exe
           if-no-files-found: error
-          compression-level: 0
+          archive: false
