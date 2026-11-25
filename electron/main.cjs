@@ -1,8 +1,41 @@
-const { app, BrowserWindow, Menu, dialog } = require("electron");
+const { app, BrowserWindow, Menu, dialog, protocol } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 
 const isPackaged = app.isPackaged;
+const uiDir = isPackaged ? path.join(process.resourcesPath, "ui") : path.join(app.getAppPath(), "dist");
+const uiUrl = "byazen://app/index.html";
+
+// Use a local origin so Chromium need not navigate to a file:// URL inside app.asar.
+protocol.registerSchemesAsPrivileged([{
+  scheme: "byazen",
+  privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+}]);
+
+const uiTypes = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml",
+};
+
+async function serveUi(request) {
+  const { host, pathname } = new URL(request.url);
+  const entry = pathname === "/index.html" || pathname === "/favicon.svg";
+  const asset = /^\/assets\/[\w-]+\.(?:js|css)$/.test(pathname);
+  if (request.method !== "GET" || host !== "app" || (!entry && !asset)) {
+    return new Response(null, { status: 404 });
+  }
+
+  try {
+    const content = await fs.promises.readFile(path.join(uiDir, pathname.slice(1)));
+    return new Response(content, { headers: { "Content-Type": uiTypes[path.extname(pathname)] } });
+  } catch (error) {
+    console.error(`Не удалось прочитать ресурс ${pathname}:`, error);
+    return new Response(null, { status: error.code === "ENOENT" ? 404 : 500 });
+  }
+}
+
 const appIcon = isPackaged
   ? path.join(process.resourcesPath, "ByAzen.ico")
   : path.join(__dirname, "..", "public", "ByAzen.ico");
@@ -41,18 +74,21 @@ async function createWindow() {
 
   window.setMenuBarVisibility(false);
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  window.webContents.on("will-navigate", (event, url) => {
-    if (!url.startsWith("file://")) event.preventDefault();
-  });
+  window.webContents.on("will-navigate", (event) => event.preventDefault());
   let startupTimeout;
   try {
     const ready = async () => {
-      await window.loadFile(path.join(__dirname, "..", "dist", "index.html"));
-      const cardCount = await window.webContents.executeJavaScript(
-        'document.querySelectorAll("#app .app-card").length',
-      );
-      if (!cardCount || (smokeDir && cardCount !== 185)) {
-        throw new Error(`Каталог не загрузился (карточек: ${cardCount}).`);
+      await fs.promises.access(path.join(uiDir, "index.html"), fs.constants.R_OK);
+      await window.loadURL(uiUrl);
+      const { cardCount, styled } = await window.webContents.executeJavaScript(`(() => {
+        const frame = document.querySelector('#app .app-frame');
+        return {
+          cardCount: document.querySelectorAll('#app .app-card').length,
+          styled: frame !== null && getComputedStyle(frame).display === 'grid',
+        };
+      })()`);
+      if (!cardCount || (smokeDir && (cardCount !== 185 || !styled))) {
+        throw new Error(`Каталог не загрузился (карточек: ${cardCount}, стили: ${styled ? "да" : "нет"}).`);
       }
     };
     await Promise.race([
@@ -75,6 +111,7 @@ async function createWindow() {
 app.whenReady().then(() => {
   app.setName("ByAzen");
   Menu.setApplicationMenu(null);
+  protocol.handle("byazen", serveUi);
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow().catch(startupFailed);
   });

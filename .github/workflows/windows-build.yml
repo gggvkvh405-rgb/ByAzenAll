@@ -36,8 +36,9 @@ jobs:
         shell: pwsh
         run: |
           $zip = Get-ChildItem 'release/ByAzen-*-windows-x64.zip' | Select-Object -First 1
-          Expand-Archive -LiteralPath $zip.FullName -DestinationPath 'release/smoke-unpacked'
-          ./scripts/test-windows-startup.ps1 -Exe 'release/smoke-unpacked/ByAzen.exe'
+          $unpacked = 'release/Тест запуска ByAzen'
+          Expand-Archive -LiteralPath $zip.FullName -DestinationPath $unpacked
+          ./scripts/test-windows-startup.ps1 -Exe (Join-Path $unpacked 'ByAzen.exe')
       - uses: actions/upload-artifact@v7
         with:
           path: release/ByAzen-*-windows-x64.zip

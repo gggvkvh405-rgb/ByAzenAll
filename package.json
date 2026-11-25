@@ -1,6 +1,6 @@
 {
   "name": "byazen-desktop-suite",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "Dark desktop library with 185 ByAzen app prototypes.",
@@ -31,11 +31,15 @@
       "buildResources": "public"
     },
     "files": [
-      "dist/**/*",
       "electron/**/*",
       "package.json"
     ],
     "extraResources": [
+      {
+        "from": "dist",
+        "to": "ui",
+        "filter": ["index.html", "favicon.svg", "assets/**"]
+      },
       {
         "from": "public/ByAzen.ico",
         "to": "ByAzen.ico"

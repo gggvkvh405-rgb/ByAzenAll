@@ -23,7 +23,7 @@ try {
   if ($process.ExitCode -ne 0 -or $report -ne 'OK') {
     throw "Startup failed (exit code: $($process.ExitCode)): $report"
   }
-  Write-Host "Verified startup, visible window and all 185 catalog cards: $exePath"
+  Write-Host "Verified startup, visible window, styles and all 185 catalog cards: $exePath"
 } finally {
   Remove-Item Env:BYAZEN_SMOKE_DIR
   Remove-Item -LiteralPath $profilePath -Recurse -Force -ErrorAction SilentlyContinue
