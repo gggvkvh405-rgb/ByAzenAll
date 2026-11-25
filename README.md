@@ -31,3 +31,12 @@ npm run desktop:win
 - `ByAzen-<версия>-windows-x64.zip` — если portable EXE не открывается, распакуй весь архив в отдельную папку и запусти `ByAzen.exe` из неё. Остальные файлы должны остаться рядом с EXE.
 
 GitHub Actions проверяет запуск каждой сборки на Windows перед публикацией артефакта.
+
+## Если Electron не открывает интерфейс
+
+В сборке **Build offline ByAzen (no Electron)** есть два варианта, которым не нужен Electron или локальный сервер:
+
+- `ByAzen-offline.html` — один HTML-файл со всем каталогом. Открой его в Chrome, Edge или Firefox; интернет не нужен. Его можно собрать локально командой `npm run build:offline` (результат: `release/offline/index.html`).
+- `ByAzen-browser.exe` — лаунчер Windows x64 (.NET Framework 4), который сохраняет тот же HTML в `%LOCALAPPDATA%\ByAzen\Offline` и открывает его в браузере по умолчанию. Это не отдельное окно приложения.
+
+Избранное и заметки хранятся в выбранном браузере; данные из Electron не переносятся автоматически.

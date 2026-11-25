@@ -1,0 +1,67 @@
+name: Build offline ByAzen (no Electron)
+
+on:
+  push:
+    paths:
+      - '.github/workflows/windows-offline.yml'
+      - 'browser-launcher/**'
+      - 'public/**'
+      - 'src/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.offline.config.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - run: npm run build:offline
+      - name: Build the Windows browser launcher
+        shell: pwsh
+        run: |
+          Copy-Item 'release/offline/index.html' 'release/ByAzen-offline.html'
+          $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
+          & $compiler /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /reference:System.Windows.Forms.dll /win32icon:public/ByAzen.ico /out:release/ByAzen-browser.exe /resource:release/ByAzen-offline.html,ByAzen.OfflineHtml browser-launcher/Program.cs
+          if ($LASTEXITCODE -ne 0) { throw 'C# compilation failed' }
+      - name: Check the exported page in Chrome without a server
+        shell: pwsh
+        run: |
+          $launcher = Start-Process -FilePath (Resolve-Path 'release/ByAzen-browser.exe').Path -ArgumentList '--export-only' -Wait -PassThru
+          if ($launcher.ExitCode -ne 0) { throw 'Could not export HTML from the launcher' }
+          $page = Join-Path $env:LOCALAPPDATA 'ByAzen/Offline/index.html'
+          if ((Get-FileHash $page).Hash -ne (Get-FileHash 'release/ByAzen-offline.html').Hash) {
+            throw 'The embedded HTML differs from the standalone download'
+          }
+          $chrome = Join-Path $env:ProgramFiles 'Google/Chrome/Application/chrome.exe'
+          $url = ([uri]$page).AbsoluteUri
+          $browserProfile = Join-Path $env:RUNNER_TEMP 'byazen-chrome'
+          $domFile = Join-Path $env:RUNNER_TEMP 'byazen-dom.html'
+          $argsList = @('--headless', '--disable-gpu', '--disable-background-networking', '--no-first-run', '--dump-dom', "--user-data-dir=`"$browserProfile`"", $url)
+          $browser = Start-Process -FilePath $chrome -ArgumentList $argsList -RedirectStandardOutput $domFile -Wait -PassThru
+          if ($browser.ExitCode -ne 0) { throw 'Chrome could not load the offline page' }
+          $cards = [regex]::Matches((Get-Content -Raw $domFile), '<article class="app-card" data-app-context="\d+">').Count
+          if ($cards -ne 185) { throw "Expected 185 catalog cards; got $cards" }
+      - uses: actions/upload-artifact@v7
+        with:
+          path: release/ByAzen-browser.exe
+          if-no-files-found: error
+          archive: false
+      - uses: actions/upload-artifact@v7
+        with:
+          path: release/ByAzen-offline.html
+          if-no-files-found: error
+          archive: false
