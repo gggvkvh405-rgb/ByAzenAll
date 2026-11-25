@@ -33,10 +33,17 @@ jobs:
       - name: Build the Windows browser launcher
         shell: pwsh
         run: |
-          Copy-Item 'release/offline/index.html' 'release/ByAzen-offline.html'
-          $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
-          & $compiler /nologo /target:winexe /platform:x64 /codepage:65001 /optimize+ /reference:System.Windows.Forms.dll /win32icon:public/ByAzen.ico /out:release/ByAzen-browser.exe /resource:release/ByAzen-offline.html,ByAzen.OfflineHtml browser-launcher/Program.cs
-          if ($LASTEXITCODE -ne 0) { throw 'C# compilation failed' }
+          try {
+            Copy-Item 'release/offline/index.html' 'release/ByAzen-offline.html'
+            $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
+            $options = @('/nologo', '/target:winexe', '/platform:x64', '/codepage:65001', '/optimize+', '/reference:System.Windows.Forms.dll', '/out:release/ByAzen-browser.exe', '/resource:release/ByAzen-offline.html,ByAzen.OfflineHtml', 'browser-launcher/Program.cs')
+            $output = & $compiler @options 2>&1
+            $output | Write-Host
+            if ($LASTEXITCODE -ne 0) { throw ($output -join '; ') }
+          } catch {
+            Write-Host "::error::$($_.Exception.Message)"
+            throw
+          }
       - name: Check the exported page in Chrome without a server
         shell: pwsh
         run: |
