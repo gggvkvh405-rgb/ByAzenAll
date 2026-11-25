@@ -36,7 +36,10 @@ jobs:
           try {
             Copy-Item 'release/offline/index.html' 'release/ByAzen-offline.html'
             $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
-            $options = @('/nologo', '/target:winexe', '/platform:x64', '/codepage:65001', '/optimize+', '/reference:System.Windows.Forms.dll', '/out:release/ByAzen-browser.exe', '/resource:release/ByAzen-offline.html,ByAzen.OfflineHtml', 'browser-launcher/Program.cs')
+            $source = (Resolve-Path 'browser-launcher/Program.cs').Path
+            $htmlPath = (Resolve-Path 'release/ByAzen-offline.html').Path
+            $exePath = Join-Path (Resolve-Path 'release').Path 'ByAzen-browser.exe'
+            $options = @('/nologo', '/target:winexe', '/platform:x64', '/codepage:65001', '/optimize+', '/reference:System.Windows.Forms.dll', "/out:$exePath", "/resource:$htmlPath,ByAzen.OfflineHtml", $source)
             $output = & $compiler @options 2>&1
             $output | Write-Host
             if ($LASTEXITCODE -ne 0) { throw ($output -join '; ') }
